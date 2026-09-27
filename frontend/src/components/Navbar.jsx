@@ -7,6 +7,8 @@ export default function Navbar() {
             <Link to="/stations" style={{ color: 'white', textDecoration: 'none' }}>Find Chargers</Link>
             <Link to="/login" style={{ color: 'white', textDecoration: 'none' }}>Login</Link>
             <Link to="/register" style={{ color: 'white', textDecoration: 'none' }}>Register</Link>
+            <Link to="/dashboard" style={{ color: 'white', textDecoration: 'none' }}>Dashboard</Link> 
+            <Link to="/owner-dashboard" style={{ color: 'white', textDecoration: 'none' }}>Owner Portal</Link>
         </nav>
     );
 }
