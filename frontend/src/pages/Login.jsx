@@ -10,14 +10,13 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      // Send credentials to your Express backend
       const response = await API.post('/auth/login', { email, password });
       
-      // Store the VIP wristband (JWT) in the browser
+      // Store the JWT token and the user role
       localStorage.setItem('token', response.data.token);
+      localStorage.setItem('role', response.data.role || response.data.user?.role);
       
-      // Redirect the user to the main platform map
-      navigate('/stations');
+      window.location.href = '/stations';
     } catch (error) {
       alert('Login failed: ' + (error.response?.data?.message || 'Server error'));
     }

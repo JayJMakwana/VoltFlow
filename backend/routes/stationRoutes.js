@@ -7,7 +7,7 @@ const {
   updateStation,
   deleteStation
 } = require('../controllers/stationController');
-const protect = require('../middleware/authMiddleware');
+const { protect, authorize } = require('../middleware/authMiddleware');
 
 // Public routes (anyone can view stations)
 router.get('/', getAllStations);

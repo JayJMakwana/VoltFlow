@@ -7,7 +7,7 @@ const {
   updateCharger,
   deleteCharger
 } = require('../controllers/chargerController');
-const protect = require('../middleware/authMiddleware');
+const { protect, authorize } = require('../middleware/authMiddleware');
 
 // Public routes (anyone can see chargers at a station)
 router.get('/station/:stationId', getChargersByStation);
