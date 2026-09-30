@@ -1,5 +1,6 @@
 const ChargingStation = require('../models/ChargingStation');
-
+const Station = require('../models/ChargingStation'); 
+const Charger = require('../models/Charger');
 // @desc    Create a new charging station (StationOwner only)
 // @route   POST /api/stations
 exports.createStation = async (req, res) => {
@@ -32,22 +33,30 @@ exports.createStation = async (req, res) => {
   }
 };
 
-// @desc    Get all charging stations
+// @desc    Get all stations with their chargers attached
 // @route   GET /api/stations
 exports.getAllStations = async (req, res) => {
   try {
-    // Populate owner details (name, email, phone, businessName) while hiding the password
-    const stations = await ChargingStation.find().populate('ownerID', 'name email phone businessName');
+    const stations = await Station.find();
+    const chargers = await Charger.find();
 
-    res.status(200).json({
-      success: true,
-      count: stations.length,
-      data: stations
+    // Loop through stations and attach their specific chargers
+    const stationsWithChargers = stations.map(station => {
+      return {
+        ...station.toObject(), 
+        chargers: chargers.filter(charger => 
+          charger.stationID.toString() === station._id.toString()
+        )
+      };
     });
+
+    res.status(200).json({ success: true, data: stationsWithChargers });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error('Error fetching stations:', error);
+    res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
+
 
 // @desc    Get single station by ID
 // @route   GET /api/stations/:id

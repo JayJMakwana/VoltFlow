@@ -5,13 +5,14 @@ const ChargingStation = require('../models/ChargingStation');
 // @route   POST /api/chargers
 exports.createCharger = async (req, res) => {
   try {
-    const { stationID, vehicleType, chargingSpeed, status } = req.body;
+    // Merged pricePerKwh and quantity into the destructuring
+    const { stationID, vehicleType, chargingSpeed, status, pricePerKwh, quantity } = req.body;
 
-    // 1. Validation
-    if (!stationID || !vehicleType || !chargingSpeed) {
+    // 1. Validation (Added pricePerKwh to required fields)
+    if (!stationID || !vehicleType || !chargingSpeed || pricePerKwh === undefined) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide stationID, vehicleType, and chargingSpeed'
+        message: 'Please provide stationID, vehicleType, chargingSpeed, and pricePerKwh'
       });
     }
 
@@ -29,11 +30,13 @@ exports.createCharger = async (req, res) => {
       });
     }
 
-    // 4. Create charger
+    // 4. Create charger with the new quantity and price fields
     const charger = new Charger({
       stationID,
       vehicleType,
       chargingSpeed,
+      pricePerKwh: Number(pricePerKwh),
+      quantity: Number(quantity) || 1, // Defaults to 1 if not provided
       status: status || 'Available'
     });
 

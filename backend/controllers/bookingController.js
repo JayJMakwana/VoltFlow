@@ -1,7 +1,7 @@
 const Booking = require('../models/Booking');
 const Charger = require('../models/Charger');
 const Payment = require('../models/Payment');
-const Station = require('../models/ChargingStation'); // FIX 1: Missing import added
+const Station = require('../models/ChargingStation');
 
 // @desc    Create a new booking (EVUser only)
 // @route   POST /api/bookings
@@ -18,12 +18,31 @@ exports.createBooking = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Charger is currently unavailable' });
     }
 
-    // 2. Generate a random 4-digit verification PIN for station arrival
+    // 2. CHECK FOR TIME SLOT CONFLICTS (Quantity & Multi-slot Capacity Check)
+    const conflictingBookingsCount = await Booking.countDocuments({
+      chargerID,
+      bookingDate,
+      bookingStatus: { $ne: 'Cancelled' }, // Ignore cancelled slots
+      $or: [
+        { startTime: { $lt: endTime }, endTime: {$gt: startTime } }
+      ]
+    });
+
+    // Compare active bookings against the physical quantity installed
+    const capacity = charger.quantity || 1;
+    if (conflictingBookingsCount >= capacity) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `This charger is fully booked (${conflictingBookingsCount}/${capacity} slots in use) for the selected time slot.` 
+      });
+    }
+
+    // 3. Generate a random 4-digit verification PIN
     const verificationPIN = Math.floor(1000 + Math.random() * 9000).toString();
 
-    // 3. Create the booking record
+    // 4. Create the booking record
     const booking = new Booking({
-      userID: req.user._id, // FIX 2: Use _id for reliable MongoDB targeting
+      userID: req.user._id,
       stationID,
       chargerID,
       bookingDate,
@@ -35,7 +54,7 @@ exports.createBooking = async (req, res) => {
 
     await booking.save();
 
-    // 4. Create an initial Pending Payment record mapped to this booking
+    // 5. Create initial Pending Payment
     const payment = new Payment({
       bookingID: booking._id,
       amount: 150, 
@@ -45,7 +64,6 @@ exports.createBooking = async (req, res) => {
 
     await payment.save();
 
-    // FIX 3: Link the payment back to the booking so .populate() works!
     booking.paymentID = payment._id;
     await booking.save();
 
@@ -68,7 +86,7 @@ exports.getOwnerBookings = async (req, res) => {
     const bookings = await Booking.find({ stationID: { $in: stationIds } })
       .populate('userID', 'name email phone')        // Pull driver info
       .populate('stationID', 'stationName address')  // Pull station name & address
-      .populate('chargerID', 'chargerType power')    // Pull charger type
+      .populate('chargerID', 'vehicleType chargingSpeed pricePerKwh quantity')    // Pull charger details
       .populate('paymentID')                         // Pull payment status
       .sort({ bookingDate: -1 });
 
@@ -83,7 +101,7 @@ exports.getUserBookings = async (req, res) => {
   try {
     const bookings = await Booking.find({ userID: req.user._id })
       .populate('stationID', 'stationName address') // Pull station name & address
-      .populate('chargerID', 'chargerType power')     // Pull charger details
+      .populate('chargerID', 'vehicleType chargingSpeed pricePerKwh quantity')     // Pull charger details
       .populate('paymentID')
       .sort({ bookingDate: -1 });
 
