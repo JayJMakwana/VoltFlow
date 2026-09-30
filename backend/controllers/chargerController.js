@@ -5,38 +5,76 @@ const ChargingStation = require('../models/ChargingStation');
 // @route   POST /api/chargers
 exports.createCharger = async (req, res) => {
   try {
-    // Merged pricePerKwh and quantity into the destructuring
-    const { stationID, vehicleType, chargingSpeed, status, pricePerKwh, quantity } = req.body;
+    const {
+      stationID,
+      vehicleType,
+      chargingSpeed,
+      pricePerKwh,
+      chargingDuration,
+      quantity,
+      status
+    } = req.body;
 
-    // 1. Validation (Added pricePerKwh to required fields)
-    if (!stationID || !vehicleType || !chargingSpeed || pricePerKwh === undefined) {
+    // Validate required fields
+    if (
+      !stationID ||
+      !vehicleType ||
+      !chargingSpeed ||
+      pricePerKwh === undefined ||
+      chargingDuration === undefined ||
+      quantity === undefined
+    ) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide stationID, vehicleType, chargingSpeed, and pricePerKwh'
+        message:
+          'Please provide stationID, vehicleType, chargingSpeed, pricePerKwh,chargingDuration and quantity'
       });
     }
 
-    // 2. Check if station exists
-    const station = await ChargingStation.findById(stationID);
-    if (!station) {
-      return res.status(404).json({ success: false, message: 'Charging station not found' });
+    // Validate numbers
+    if (Number(pricePerKwh) <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Price per kWh must be greater than 0'
+      });
     }
 
-    // 3. Verify ownership (must be station owner or admin)
-    if (station.ownerID.toString() !== req.user.id && req.user.role !== 'Admin') {
+    if (Number(chargingDuration) <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Charging duration must be greater than 0'
+      });
+    }
+
+    // Check station
+    const station = await ChargingStation.findById(stationID);
+
+    if (!station) {
+      return res.status(404).json({
+        success: false,
+        message: 'Charging station not found'
+      });
+    }
+
+    // Check ownership
+    if (
+      station.ownerID.toString() !== req.user.id.toString() &&
+      req.user.role !== 'Admin'
+    ) {
       return res.status(403).json({
         success: false,
         message: 'Unauthorized: You do not own this station'
       });
     }
 
-    // 4. Create charger with the new quantity and price fields
+    // Create charger
     const charger = new Charger({
       stationID,
       vehicleType,
       chargingSpeed,
       pricePerKwh: Number(pricePerKwh),
-      quantity: Number(quantity) || 1, // Defaults to 1 if not provided
+      chargingDuration: Number(chargingDuration),
+      quantity: Number(quantity),
       status: status || 'Available'
     });
 
@@ -47,8 +85,15 @@ exports.createCharger = async (req, res) => {
       message: 'Charger added successfully to station',
       data: charger
     });
+
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error('Error adding charger:', error);
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
   }
 };
 

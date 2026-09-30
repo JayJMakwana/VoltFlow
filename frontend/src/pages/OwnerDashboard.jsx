@@ -31,7 +31,11 @@ export default function OwnerDashboard() {
   const [chargingSpeed, setChargingSpeed] = useState('');
   const [pricePerKwh, setPricePerKwh] = useState('');
   const [quantity, setQuantity] = useState('');
+ 
+  const [openingTime, setOpeningTime] = useState('09:00');
+  const [closingTime, setClosingTime] = useState('21:00');
 
+  const [chargingDuration, setChargingDuration] = useState('');
   // Load Google Maps
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY
@@ -120,7 +124,9 @@ export default function OwnerDashboard() {
         stationName: stationName.trim(),
         address: address.trim(),
         latitude: location.lat,
-        longitude: location.lng
+        longitude: location.lng,
+        openingTime,
+        closingTime
       });
 
       alert('Station deployed successfully!');
@@ -143,39 +149,60 @@ export default function OwnerDashboard() {
 
   // Add charger 
   const handleAddCharger = async () => {
-    if (!selectedStation || !vehicleType || !chargingSpeed || !pricePerKwh || !quantity) {
-        alert('Please fill out all Charger fields.');
-        return;
-      }
-    if (Number(quantity) <= 0) {
-      alert('Quantity must be greater than 0.');
-      return;
-    }
-    try {
-      await API.post('/chargers', {
-        stationID: selectedStation,
-        vehicleType,
-        chargingSpeed,
-        pricePerKwh: Number(pricePerKwh),
-        quantity: Number(quantity)
-      });
+  if (
+    !selectedStation ||
+    !vehicleType ||
+    !chargingSpeed ||
+    !pricePerKwh ||
+    !chargingDuration||
+    !quantity
+  ) {
+    alert('Please fill out all charger fields.');
+    return;
+  }
 
-      alert('Charger added successfully!');
+  if (Number(pricePerKwh) <= 0) {
+    alert('Price per kWh must be greater than 0.');
+    return;
+  }
 
-      setChargingSpeed('');
-      setPricePerKwh('');
-      setQuantity(1);
+  if (Number(chargingDuration) <= 0) {
+    alert('Charging duration must be greater than 0.');
+    return;
+  }
 
-      fetchStations();
+  try {
+    await API.post('/chargers', {
+      stationID: selectedStation,
+      vehicleType,
+      chargingSpeed,
+      pricePerKwh: Number(pricePerKwh),
+      chargingDuration: Number(chargingDuration),
+      quantity: Number(quantity)
+    });
 
-    } catch (error) {
-      alert(
-        'Failed to add Charger ' +
-        (error.response?.data?.message || 'Server error')
-      );
-    }
-  };
+    alert('Charger added successfully!');
 
+    setVehicleType('');
+    setChargingSpeed('');
+    setPricePerKwh('');
+    setChargingDuration('');
+
+    fetchStations();
+
+  } catch (error) {
+    console.error('Add charger error:', error);
+
+    alert(
+      'Failed to add charger: ' +
+      (
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        'Server error'
+      )
+    );
+  }
+};
   // Google Maps loading error
   if (loadError) {
     return (
@@ -520,6 +547,55 @@ export default function OwnerDashboard() {
                 boxSizing: 'border-box'
               }}
             />
+            <div style={{ marginBottom: '15px' }}>
+              <label
+                style={{
+                  display: 'block',
+                  marginBottom: '6px',
+                  fontWeight: '600'
+                }}
+              >
+                Opening Time
+              </label>
+
+              <input
+                type="time"
+                value={openingTime}
+                onChange={(e) => setOpeningTime(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '5px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label
+                style={{
+                  display: 'block',
+                  marginBottom: '6px',
+                  fontWeight: '600'
+                }}
+              >
+                Closing Time
+              </label>
+
+              <input
+                type="time"
+                value={closingTime}
+                onChange={(e) => setClosingTime(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '5px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
 
             {/* Google Map */}
             <h4
@@ -789,6 +865,43 @@ export default function OwnerDashboard() {
                   boxSizing: 'border-box'
                 }}
               />
+              <select
+                value={chargingDuration}
+                onChange={(e) => setChargingDuration(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  marginBottom: '15px',
+                  borderRadius: '5px',
+                  border: '1px solid #cbd5e1',
+                  boxSizing: 'border-box',
+                  color: chargingDuration ? '#0f172a' : '#64748b'
+                }}
+              >
+                <option value="" disabled>
+                  Charging Duration
+                </option>
+
+                <option value="30">
+                  30 Minutes
+                </option>
+
+                <option value="60">
+                  1 Hour
+                </option>
+
+                <option value="90">
+                  1 Hour 30 Minutes
+                </option>
+
+                <option value="120">
+                  2 Hours
+                </option>
+
+                <option value="180">
+                  3 Hours
+                </option>
+              </select>
             </div>
 
             {/* Add Charger */}

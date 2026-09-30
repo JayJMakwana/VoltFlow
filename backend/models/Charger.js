@@ -1,12 +1,46 @@
 const mongoose = require('mongoose');
 
-const chargerSchema = new mongoose.Schema({
-  stationID: { type: mongoose.Schema.Types.ObjectId, ref: 'ChargingStation', required: true },
-  vehicleType: { type: String, required: true },
-  chargingSpeed: { type: String, required: true },
-  pricePerKwh: { type: Number, required: true }, // ADDED
-  quantity: { type: Number, default: 1, required: true }, // ADDED (Defaults to 1)
-  status: { type: String, default: 'Available' }
-});
+const chargerSchema = new mongoose.Schema(
+  {
+    stationID: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ChargingStation',
+      required: true
+    },
+
+    vehicleType: {
+      type: String,
+      required: true
+    },
+
+    chargingSpeed: {
+      type: String,
+      required: true
+    },
+
+    pricePerKwh: {
+      type: Number,
+      required: true
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1
+    },
+    chargingDuration: {
+      type: Number,
+      required: true
+    },
+
+    status: {
+      type: String,
+      enum: ['Available', 'Unavailable', 'Maintenance'],
+      default: 'Available'
+    }
+  },
+  {
+    timestamps: true
+  }
+);
 
 module.exports = mongoose.model('Charger', chargerSchema);
