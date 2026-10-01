@@ -5,7 +5,8 @@ const {
   getAllStations,
   getStationById,
   updateStation,
-  deleteStation
+  deleteStation,
+  getRoadDistances
 } = require('../controllers/stationController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -17,5 +18,5 @@ router.get('/:id', getStationById);
 router.post('/', protect, createStation);
 router.put('/:id', protect, updateStation);
 router.delete('/:id', protect, deleteStation);
-
+router.post('/road-distances', getRoadDistances);
 module.exports = router;

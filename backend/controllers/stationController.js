@@ -129,3 +129,128 @@ exports.deleteStation = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 };
+// @desc    Get road distance and travel time from user to stations
+// @route   POST /api/stations/road-distances
+exports.getRoadDistances = async (req, res) => {
+  try {
+    const { origin, destinations } = req.body;
+
+    if (
+      !origin ||
+      origin.latitude === undefined ||
+      origin.longitude === undefined
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'Origin latitude and longitude are required'
+      });
+    }
+
+    if (!Array.isArray(destinations) || destinations.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Destinations are required'
+      });
+    }
+
+    if (!process.env.ROUTES_API_KEY) {
+      return res.status(500).json({
+        success: false,
+        message: 'Google Routes API key is not configured'
+      });
+    }
+
+    const requestBody = {
+      origins: [
+        {
+          waypoint: {
+            location: {
+              latLng: {
+                latitude: Number(origin.latitude),
+                longitude: Number(origin.longitude)
+              }
+            }
+          }
+        }
+      ],
+
+      destinations: destinations.map((station) => ({
+        waypoint: {
+          location: {
+            latLng: {
+              latitude: Number(station.latitude),
+              longitude: Number(station.longitude)
+            }
+          }
+        }
+      })),
+
+      travelMode: 'DRIVE',
+      routingPreference: 'TRAFFIC_AWARE'
+    };
+
+    const response = await fetch(
+      'https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': process.env.ROUTES_API_KEY,
+          'X-Goog-FieldMask':
+            'originIndex,destinationIndex,distanceMeters,duration,condition,status'
+        },
+        body: JSON.stringify(requestBody)
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+
+      console.error('Google Routes API error:', errorText);
+
+      return res.status(response.status).json({
+        success: false,
+        message: 'Failed to calculate road distances',
+        error: errorText
+      });
+    }
+
+    const responseText = await response.text();
+
+    let routeResults;
+
+    try {
+      routeResults = JSON.parse(responseText);
+    } catch {
+      routeResults = responseText
+        .trim()
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => JSON.parse(line));
+    }
+
+    const results = routeResults.map((route) => ({
+      destinationIndex: route.destinationIndex,
+      distanceMeters: route.distanceMeters,
+      distanceKm: route.distanceMeters
+        ? route.distanceMeters / 1000
+        : null,
+      duration: route.duration || null,
+      condition: route.condition || null,
+      status: route.status || null
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: results
+    });
+  } catch (error) {
+    console.error('Error calculating road distances:', error);
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
