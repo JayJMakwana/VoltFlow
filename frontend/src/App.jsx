@@ -8,7 +8,9 @@ import Booking from './pages/Booking';
 import Dashboard from './pages/Dashboard';
 import OwnerDashboard from './pages/OwnerDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
-
+import Feedback from './pages/Feedback';
+import Bill from './pages/Bill';
+import OwnerEarnings from './pages/OwnerEarnings';
 function App() {
   return (
     <BrowserRouter>
@@ -20,12 +22,24 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/stations" element={<Stations />} />
-
+          
           {/* Protected Routes (Requires Authentication to Book or View Dashboards) */}
           <Route element={<ProtectedRoute />}>
             <Route path="/stations/:id" element={<Booking />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/owner-dashboard" element={<OwnerDashboard />} />
+            <Route
+            path="/feedback/:stationId"
+            element={<Feedback />}
+            />
+            <Route
+              path="/bill/:bookingID"
+              element={<Bill />}
+            />
+            <Route
+              path="/owner-earnings"
+              element={<OwnerEarnings />}
+            />
           </Route>
         </Routes>
       </div>

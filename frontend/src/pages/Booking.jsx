@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import {
+  useParams,
+  useLocation,
+  useNavigate
+} from 'react-router-dom';
 import API from '../api/axios';
 
 export default function Booking() {
   const { id } = useParams();
   const location = useLocation();
-
+  const navigate = useNavigate();
   const [chargers, setChargers] = useState([]);
   const [slots, setSlots] = useState([]);
 
@@ -20,15 +24,73 @@ export default function Booking() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [booking, setBooking] = useState(false);
 
-  // Fetch chargers
+  // ============================================================
+  // GET TODAY'S DATE IN LOCAL TIME
+  // ============================================================
+
+  const getTodayDate = () => {
+    const now = new Date();
+
+    return `${now.getFullYear()}-${String(
+      now.getMonth() + 1
+    ).padStart(2, '0')}-${String(
+      now.getDate()
+    ).padStart(2, '0')}`;
+  };
+
+  // ============================================================
+  // CHECK WHETHER SLOT IS IN THE PAST
+  // ============================================================
+
+  const isSlotInPast = (slot) => {
+    if (!bookingDate || !slot?.startTime) {
+      return false;
+    }
+
+    const today = getTodayDate();
+
+    // Future date
+    if (bookingDate > today) {
+      return false;
+    }
+
+    // Past date
+    if (bookingDate < today) {
+      return true;
+    }
+
+    // Today
+    const [hours, minutes] = slot.startTime
+      .split(':')
+      .map(Number);
+
+    const slotMinutes = hours * 60 + minutes;
+
+    const now = new Date();
+
+    const currentMinutes =
+      now.getHours() * 60 + now.getMinutes();
+
+    return slotMinutes <= currentMinutes;
+  };
+
+  // ============================================================
+  // FETCH CHARGERS
+  // ============================================================
+
   useEffect(() => {
     const fetchChargers = async () => {
       try {
-        const response = await API.get(`/chargers/station/${id}`);
+        const response = await API.get(
+          `/chargers/station/${id}`
+        );
 
         setChargers(response.data.data || []);
       } catch (error) {
-        console.error('Failed to load chargers:', error);
+        console.error(
+          'Failed to load chargers:',
+          error
+        );
 
         alert(
           error.response?.data?.message ||
@@ -40,7 +102,10 @@ export default function Booking() {
     fetchChargers();
   }, [id]);
 
-  // Fetch slots when date and charger are selected
+  // ============================================================
+  // FETCH AVAILABLE SLOTS
+  // ============================================================
+
   useEffect(() => {
     if (!bookingDate || !selectedCharger) {
       setSlots([]);
@@ -76,18 +141,37 @@ export default function Booking() {
     };
 
     fetchAvailableSlots();
-  }, [bookingDate, selectedCharger, id]);
+  }, [
+    bookingDate,
+    selectedCharger,
+    id
+  ]);
 
-  // Select a slot
+  // ============================================================
+  // SELECT SLOT
+  // ============================================================
+
   const handleSelectSlot = (slot) => {
     if (!slot.available) {
+      return;
+    }
+
+    // Prevent selecting a slot that has just become past
+    if (isSlotInPast(slot)) {
+      alert(
+        'This time slot has already passed. Please select another slot.'
+      );
+
       return;
     }
 
     setSelectedSlot(slot);
   };
 
-  // Book selected slot
+  // ============================================================
+  // BOOK SELECTED SLOT
+  // ============================================================
+
   const handleBookSlot = async () => {
     if (!bookingDate) {
       alert('Please select a date first.');
@@ -109,28 +193,38 @@ export default function Booking() {
       return;
     }
 
+    // Check again before sending booking request
+    if (isSlotInPast(selectedSlot)) {
+      alert(
+        'This time slot has already passed. Please select another slot.'
+      );
+
+      setSelectedSlot(null);
+
+      return;
+    }
+
     try {
       setBooking(true);
 
-      const response = await API.post('/bookings', {
-        stationID: id,
-        chargerID: selectedCharger,
-        bookingDate,
-        startTime: selectedSlot.startTime,
-        endTime: selectedSlot.endTime
-      });
-
-      alert(response.data.message);
-
-      // Refresh slots after successful booking
-      const slotsResponse = await API.get(
-        `/bookings/available-slots/${id}/${selectedCharger}/${bookingDate}`
+      const response = await API.post(
+        '/bookings',
+        {
+          stationID: id,
+          chargerID: selectedCharger,
+          bookingDate,
+          startTime: selectedSlot.startTime,
+          endTime: selectedSlot.endTime
+        }
       );
 
-      setSlots(slotsResponse.data.data || []);
-      setSelectedSlot(null);
-
+      navigate('/dashboard');
     } catch (error) {
+      console.error(
+        'Booking failed:',
+        error
+      );
+
       alert(
         'Booking failed: ' +
         (
@@ -139,13 +233,17 @@ export default function Booking() {
         )
       );
 
-      // Refresh slots in case another user booked it
+      // Refresh slots in case another user
+      // booked the same slot
       try {
         const slotsResponse = await API.get(
           `/bookings/available-slots/${id}/${selectedCharger}/${bookingDate}`
         );
 
-        setSlots(slotsResponse.data.data || []);
+        setSlots(
+          slotsResponse.data.data || []
+        );
+
         setSelectedSlot(null);
       } catch (refreshError) {
         console.error(
@@ -158,7 +256,10 @@ export default function Booking() {
     }
   };
 
-  // Filter chargers
+  // ============================================================
+  // FILTER CHARGERS
+  // ============================================================
+
   const filteredChargers = chargers.filter(
     (charger) => {
       if (filterType === 'All') {
@@ -167,9 +268,23 @@ export default function Booking() {
 
       return charger.vehicleType
         ?.toLowerCase()
-        .includes(filterType.toLowerCase());
+        .includes(
+          filterType.toLowerCase()
+        );
     }
   );
+
+  // ============================================================
+  // FILTER ONLY FUTURE SLOTS
+  // ============================================================
+
+  const futureSlots = slots.filter(
+    (slot) => !isSlotInPast(slot)
+  );
+
+  // ============================================================
+  // UI
+  // ============================================================
 
   return (
     <div
@@ -182,7 +297,10 @@ export default function Booking() {
     >
       <h2>Book Charging Slot</h2>
 
-      {/* DATE */}
+      {/* ======================================================
+          DATE
+      ====================================================== */}
+
       <div
         style={{
           marginBottom: '25px'
@@ -201,10 +319,11 @@ export default function Booking() {
         <input
           type="date"
           value={bookingDate}
-          min={new Date().toISOString().split('T')[0]}
+          min={getTodayDate()}
           onChange={(e) => {
             setBookingDate(e.target.value);
             setSelectedSlot(null);
+            setSlots([]);
           }}
           style={{
             padding: '10px',
@@ -214,7 +333,10 @@ export default function Booking() {
         />
       </div>
 
-      {/* VEHICLE TYPE FILTER */}
+      {/* ======================================================
+          VEHICLE TYPE FILTER
+      ====================================================== */}
+
       <div
         style={{
           display: 'flex',
@@ -237,11 +359,11 @@ export default function Booking() {
               setSelectedSlot(null);
               setSlots([]);
             }}
-          
             style={{
               padding: '7px 14px',
               borderRadius: '15px',
-              border: '1px solid #cbd5e1',
+              border:
+                '1px solid #cbd5e1',
               background:
                 filterType === type
                   ? '#2563eb'
@@ -259,7 +381,10 @@ export default function Booking() {
         ))}
       </div>
 
-      {/* CHARGERS */}
+      {/* ======================================================
+          CHARGERS
+      ====================================================== */}
+
       <h3>Select Charger</h3>
 
       <div
@@ -271,207 +396,316 @@ export default function Booking() {
         }}
       >
         {filteredChargers.length === 0 ? (
-          <p style={{ color: '#64748b' }}>
+          <p
+            style={{
+              color: '#64748b'
+            }}
+          >
             No chargers available for this vehicle type.
           </p>
         ) : (
-          filteredChargers.map((charger) => (
-            <div
-              key={charger._id}
-             onClick={() => {
-                if (!bookingDate) {
-                  alert('Please select a date first.');
-                  return;
-                }
+          filteredChargers.map(
+            (charger) => (
+              <div
+                key={charger._id}
+                onClick={() => {
+                  if (!bookingDate) {
+                    alert(
+                      'Please select a date first.'
+                    );
+                    return;
+                  }
 
-                setSelectedCharger(charger._id);
-                setSelectedSlot(null);
-                setSlots([]);
-              }}
-              style={{
-                border:
-                  selectedCharger === charger._id
-                    ? '2px solid #2563eb'
-                    : '1px solid #cbd5e1',
-                padding: '18px',
-                borderRadius: '8px',
-                background:
-                  selectedCharger === charger._id
-                    ? '#eff6ff'
-                    : '#f8fafc',
-                cursor: 'pointer'
-              }}
-            >
-              <p style={{ margin: '0 0 5px' }}>
-                <strong>Vehicle Type:</strong>{' '}
-                {charger.vehicleType}
-              </p>
+                  if (
+                    charger.status &&
+                    charger.status !== 'Available'
+                  ) {
+                    alert(
+                      'This charger is currently unavailable.'
+                    );
+                    return;
+                  }
 
-              <p style={{ margin: '0 0 5px' }}>
-                <strong>Charging Speed:</strong>{' '}
-                {charger.chargingSpeed}
-              </p>
+                  setSelectedCharger(
+                    charger._id
+                  );
 
-              <p style={{ margin: '0 0 5px' }}>
-                <strong>Charging Duration:</strong>{' '}
-                {charger.chargingDuration} minutes
-              </p>
+                  setSelectedSlot(null);
+                  setSlots([]);
+                }}
+                style={{
+                  border:
+                    selectedCharger ===
+                    charger._id
+                      ? '2px solid #2563eb'
+                      : '1px solid #cbd5e1',
 
-              <p style={{ margin: '0' }}>
-                <strong>Price:</strong>{' '}
-                ₹{charger.pricePerKwh}/kWh
-              </p>
+                  padding: '18px',
 
-              {selectedCharger === charger._id && (
+                  borderRadius: '8px',
+
+                  background:
+                    selectedCharger ===
+                    charger._id
+                      ? '#eff6ff'
+                      : '#f8fafc',
+
+                  cursor: 'pointer'
+                }}
+              >
                 <p
                   style={{
-                    marginTop: '10px',
-                    color: '#2563eb',
-                    fontWeight: '600'
+                    margin: '0 0 5px'
                   }}
                 >
-                  Charger Selected
+                  <strong>
+                    Vehicle Type:
+                  </strong>{' '}
+                  {charger.vehicleType}
                 </p>
-              )}
-            </div>
-          ))
+
+                <p
+                  style={{
+                    margin: '0 0 5px'
+                  }}
+                >
+                  <strong>
+                    Charging Speed:
+                  </strong>{' '}
+                  {charger.chargingSpeed}
+                </p>
+
+                <p
+                  style={{
+                    margin: '0 0 5px'
+                  }}
+                >
+                  <strong>
+                    Charging Duration:
+                  </strong>{' '}
+                  {charger.chargingDuration}{' '}
+                  minutes
+                </p>
+
+                <p
+                  style={{
+                    margin: '0'
+                  }}
+                >
+                  <strong>
+                    Price:
+                  </strong>{' '}
+                  ₹
+                  {charger.pricePerKwh}
+                  /kWh
+                </p>
+
+                {charger.status &&
+                  charger.status !==
+                    'Available' && (
+                    <p
+                      style={{
+                        marginTop: '10px',
+                        color: '#dc2626',
+                        fontWeight: '600'
+                      }}
+                    >
+                      {charger.status}
+                    </p>
+                  )}
+
+                {selectedCharger ===
+                  charger._id && (
+                  <p
+                    style={{
+                      marginTop: '10px',
+                      color: '#2563eb',
+                      fontWeight: '600'
+                    }}
+                  >
+                    Charger Selected
+                  </p>
+                )}
+              </div>
+            )
+          )
         )}
       </div>
 
-      {/* SLOTS */}
-      {bookingDate && selectedCharger && (
-        <div>
-          <h3>Select Available Slot</h3>
+      {/* ======================================================
+          SLOTS
+      ====================================================== */}
 
-          {loadingSlots ? (
-            <p>Loading available slots...</p>
-          ) : slots.length === 0 ? (
-            <p style={{ color: '#64748b' }}>
-              No slots available for this date.
-            </p>
-          ) : (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns:
-                  'repeat(auto-fit, minmax(180px, 1fr))',
-                gap: '12px',
-                marginTop: '15px'
-              }}
-            >
-              {slots.map((slot, index) => (
-                <button
-                  key={index}
-                  disabled={!slot.available}
-                  onClick={() =>
-                    handleSelectSlot(slot)
-                  }
-                  style={{
-                    padding: '15px',
-                    borderRadius: '8px',
-                    border:
-                      selectedSlot?.startTime ===
-                        slot.startTime &&
-                      selectedSlot?.endTime ===
-                        slot.endTime
-                        ? '2px solid #2563eb'
-                        : '1px solid #cbd5e1',
+      {bookingDate &&
+        selectedCharger && (
+          <div>
+            <h3>
+              Select Available Slot
+            </h3>
 
-                    background:
-                      !slot.available
-                        ? '#e5e7eb'
-                        : selectedSlot?.startTime ===
-                            slot.startTime &&
-                          selectedSlot?.endTime ===
-                            slot.endTime
-                        ? '#2563eb'
-                        : '#ffffff',
-
-                    color:
-                      !slot.available
-                        ? '#64748b'
-                        : selectedSlot?.startTime ===
-                            slot.startTime &&
-                          selectedSlot?.endTime ===
-                            slot.endTime
-                        ? '#ffffff'
-                        : '#1e293b',
-
-                    cursor:
-                      !slot.available
-                        ? 'not-allowed'
-                        : 'pointer',
-
-                    fontWeight: '600'
-                  }}
-                >
-                  {slot.startTime} - {slot.endTime}
-
-                  <div
-                    style={{
-                      fontSize: '12px',
-                      marginTop: '5px'
-                    }}
-                  >
-                    {slot.available
-                      ? 'Available'
-                      : 'Booked'}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* BOOK BUTTON */}
-          {selectedSlot && (
-            <div
-              style={{
-                marginTop: '25px',
-                padding: '20px',
-                border: '1px solid #cbd5e1',
-                borderRadius: '8px',
-                background: '#f8fafc'
-              }}
-            >
+            {loadingSlots ? (
               <p>
-                <strong>Selected Date:</strong>{' '}
-                {bookingDate}
+                Loading available slots...
               </p>
-
-              <p>
-                <strong>Selected Slot:</strong>{' '}
-                {selectedSlot.startTime} -{' '}
-                {selectedSlot.endTime}
-              </p>
-
-              <button
-                onClick={handleBookSlot}
-                disabled={booking}
+            ) : futureSlots.length ===
+              0 ? (
+              <p
                 style={{
-                  width: '100%',
-                  padding: '12px',
-                  marginTop: '10px',
-                  background: booking
-                    ? '#94a3b8'
-                    : '#22c55e',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: booking
-                    ? 'not-allowed'
-                    : 'pointer',
-                  fontWeight: 'bold',
-                  fontSize: '16px'
+                  color: '#64748b'
                 }}
               >
-                {booking
-                  ? 'Booking...'
-                  : 'Book Slot'}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+                No future slots available
+                for this date.
+              </p>
+            ) : (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns:
+                    'repeat(auto-fit, minmax(180px, 1fr))',
+                  gap: '12px',
+                  marginTop: '15px'
+                }}
+              >
+                {futureSlots.map(
+                  (slot, index) => (
+                    <button
+                      key={index}
+                      disabled={
+                        !slot.available
+                      }
+                      onClick={() =>
+                        handleSelectSlot(
+                          slot
+                        )
+                      }
+                      style={{
+                        padding: '15px',
+                        borderRadius: '8px',
+
+                        border:
+                          selectedSlot?.startTime ===
+                            slot.startTime &&
+                          selectedSlot?.endTime ===
+                            slot.endTime
+                            ? '2px solid #2563eb'
+                            : '1px solid #cbd5e1',
+
+                        background:
+                          !slot.available
+                            ? '#e5e7eb'
+                            : selectedSlot?.startTime ===
+                                slot.startTime &&
+                              selectedSlot?.endTime ===
+                                slot.endTime
+                            ? '#2563eb'
+                            : '#ffffff',
+
+                        color:
+                          !slot.available
+                            ? '#64748b'
+                            : selectedSlot?.startTime ===
+                                slot.startTime &&
+                              selectedSlot?.endTime ===
+                                slot.endTime
+                            ? '#ffffff'
+                            : '#1e293b',
+
+                        cursor:
+                          !slot.available
+                            ? 'not-allowed'
+                            : 'pointer',
+
+                        fontWeight: '600'
+                      }}
+                    >
+                      {slot.startTime} -{' '}
+                      {slot.endTime}
+
+                      <div
+                        style={{
+                          fontSize: '12px',
+                          marginTop: '5px'
+                        }}
+                      >
+                        {slot.available
+                          ? 'Available'
+                          : 'Booked'}
+                      </div>
+                    </button>
+                  )
+                )}
+              </div>
+            )}
+
+            {/* ==================================================
+                BOOK BUTTON
+            ================================================== */}
+
+            {selectedSlot && (
+              <div
+                style={{
+                  marginTop: '25px',
+                  padding: '20px',
+                  border:
+                    '1px solid #cbd5e1',
+                  borderRadius: '8px',
+                  background: '#f8fafc'
+                }}
+              >
+                <p>
+                  <strong>
+                    Selected Date:
+                  </strong>{' '}
+                  {bookingDate}
+                </p>
+
+                <p>
+                  <strong>
+                    Selected Slot:
+                  </strong>{' '}
+                  {selectedSlot.startTime}{' '}
+                  -{' '}
+                  {selectedSlot.endTime}
+                </p>
+
+                <button
+                  onClick={
+                    handleBookSlot
+                  }
+                  disabled={booking}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    marginTop: '10px',
+
+                    background: booking
+                      ? '#94a3b8'
+                      : '#22c55e',
+
+                    color: '#ffffff',
+
+                    border: 'none',
+
+                    borderRadius: '6px',
+
+                    cursor: booking
+                      ? 'not-allowed'
+                      : 'pointer',
+
+                    fontWeight: 'bold',
+
+                    fontSize: '16px'
+                  }}
+                >
+                  {booking
+                    ? 'Booking...'
+                    : 'Book Slot'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
     </div>
   );
 }

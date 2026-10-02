@@ -224,22 +224,47 @@ export default function Stations() {
                   </p>
                 )}
 
-              <button
-                onClick={() =>
-                  navigate(`/stations/${station._id}`)
-                }
+              <div
                 style={{
-                  padding: '10px 16px',
-                  background: '#3b82f6',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold'
+                  display: 'flex',
+                  gap: '10px',
+                  flexWrap: 'wrap'
                 }}
               >
-                View Chargers
-              </button>
+                <button
+                  onClick={() =>
+                    navigate(`/stations/${station._id}`)
+                  }
+                  style={{
+                    padding: '10px 16px',
+                    background: '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  View Chargers
+                </button>
+
+                <button
+                  onClick={() =>
+                    navigate(`/feedback/${station._id}`)
+                  }
+                  style={{
+                    padding: '10px 16px',
+                    background: '#f59e0b',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  ⭐ Reviews
+                </button>
+              </div>
             </div>
           ))}
         </div>

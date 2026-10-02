@@ -8,19 +8,63 @@ export default function Login() {
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await API.post('/auth/login', { email, password });
-      
-      // Store the JWT token and the user role
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('role', response.data.role || response.data.user?.role);
-      
-      window.location.href = '/stations';
-    } catch (error) {
-      alert('Login failed: ' + (error.response?.data?.message || 'Server error'));
+  e.preventDefault();
+
+  try {
+    const response = await API.post(
+      '/auth/login',
+      {
+        email,
+        password
+      }
+    );
+
+    const token = response.data.token;
+
+    const user = response.data.user;
+
+    const role = user?.role;
+
+    // Store authentication information
+    localStorage.setItem(
+      'token',
+      token
+    );
+
+    localStorage.setItem(
+      'role',
+      role
+    );
+
+    localStorage.setItem(
+      'user',
+      JSON.stringify(user)
+    );
+
+    // Redirect according to role
+    if (role === 'StationOwner') {
+      window.location.href =
+        '/owner-dashboard';
+
+    } else if (role === 'Admin') {
+      window.location.href =
+        '/admin-dashboard';
+
+    } else {
+      window.location.href =
+        '/dashboard';
     }
-  };
+
+  } catch (error) {
+    alert(
+      'Login failed: ' +
+      (
+        error.response?.data?.message ||
+        'Server error'
+      )
+    );
+  }
+};
 
   return (
     <div style={{ maxWidth: '400px', margin: '40px auto', fontFamily: 'sans-serif' }}>

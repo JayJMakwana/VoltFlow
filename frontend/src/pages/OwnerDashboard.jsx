@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import API from '../api/axios';
 
 import {
@@ -34,7 +35,7 @@ export default function OwnerDashboard() {
  
   const [openingTime, setOpeningTime] = useState('09:00');
   const [closingTime, setClosingTime] = useState('21:00');
-
+  const navigate = useNavigate();
   const [chargingDuration, setChargingDuration] = useState('');
   // Load Google Maps
   const { isLoaded, loadError } = useJsApiLoader({
@@ -43,14 +44,27 @@ export default function OwnerDashboard() {
 
   // Fetch stations
   const fetchStations = async () => {
-    try {
-      const response = await API.get('/stations');
+  try {
+    const response = await API.get(
+      '/stations/my-stations'
+    );
 
-      setStations(response.data.data || []);
-    } catch (error) {
-      console.error('Failed to load stations:', error);
-    }
-  };
+    setStations(
+      response.data.data || []
+    );
+
+  } catch (error) {
+    console.error(
+      'Failed to load owner stations:',
+      error
+    );
+
+    alert(
+      error.response?.data?.message ||
+      'Failed to load your stations'
+    );
+  }
+};
 
   useEffect(() => {
     fetchStations();
@@ -225,6 +239,7 @@ export default function OwnerDashboard() {
   }
 
   return (
+    
     <div
       style={{
         maxWidth: '1000px',
@@ -234,6 +249,21 @@ export default function OwnerDashboard() {
         padding: '0 20px'
       }}
     >
+      <button
+  onClick={() => navigate('/owner-earnings')}
+  style={{
+    padding: '10px 18px',
+    background: '#2563eb',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontWeight: '600',
+    marginBottom: '20px'
+  }}
+>
+  💰 View Earnings
+</button>
       <h2
         style={{
           fontSize: '1.8rem',

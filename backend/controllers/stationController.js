@@ -254,3 +254,52 @@ exports.getRoadDistances = async (req, res) => {
     });
   }
 };
+// @desc    Get stations owned by logged-in Station Owner
+// @route   GET /api/stations/my-stations
+exports.getMyStations = async (req, res) => {
+  try {
+    const stations = await ChargingStation.find({
+      ownerID: req.user.id
+    });
+
+    const stationIds = stations.map(
+      station => station._id
+    );
+
+    const chargers = await Charger.find({
+      stationID: { $in: stationIds }
+    });
+
+    const stationsWithChargers = stations.map(
+      station => {
+        return {
+          ...station.toObject(),
+
+          chargers: chargers.filter(
+            charger =>
+              charger.stationID.toString() ===
+              station._id.toString()
+          )
+        };
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      count: stationsWithChargers.length,
+      data: stationsWithChargers
+    });
+
+  } catch (error) {
+    console.error(
+      'Error fetching owner stations:',
+      error
+    );
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};

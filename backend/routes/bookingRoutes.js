@@ -1,29 +1,65 @@
 const express = require('express');
+
 const router = express.Router();
 
 const {
   createBooking,
   getUserBookings,
   getOwnerBookings,
-  getAvailableSlots
+  getAvailableSlots,
+  completeCharging
 } = require('../controllers/bookingController');
 
 const { protect } = require('../middleware/authMiddleware');
 
-// Create booking
-router.post('/', protect, createBooking);
+// ============================================================
+// CREATE BOOKING
+// ============================================================
 
-// Get logged-in user's bookings
-router.get('/my-bookings', protect, getUserBookings);
+router.post(
+  '/',
+  protect,
+  createBooking
+);
 
-// Get bookings for owner's stations
-router.get('/owner-bookings', protect, getOwnerBookings);
+// ============================================================
+// USER BOOKINGS
+// ============================================================
 
-// Get available slots
+router.get(
+  '/my-bookings',
+  protect,
+  getUserBookings
+);
+
+// ============================================================
+// OWNER BOOKINGS
+// ============================================================
+
+router.get(
+  '/owner-bookings',
+  protect,
+  getOwnerBookings
+);
+
+// ============================================================
+// AVAILABLE SLOTS
+// ============================================================
+
 router.get(
   '/available-slots/:stationID/:chargerID/:date',
   protect,
   getAvailableSlots
+);
+
+// ============================================================
+// COMPLETE CHARGING
+// ============================================================
+
+router.post(
+  '/complete/:bookingID',
+  protect,
+  completeCharging
 );
 
 module.exports = router;

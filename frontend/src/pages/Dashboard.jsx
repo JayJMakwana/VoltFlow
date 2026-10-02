@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import API from '../api/axios';
 
 export default function Dashboard() {
   const [myBookings, setMyBookings] = useState([]);
   const [incomingRequests, setIncomingRequests] = useState([]);
   const role = localStorage.getItem('role');
-
+  const navigate = useNavigate();
   const fetchMyBookings = async () => {
     try {
       const response = await API.get('/bookings/my-bookings');
@@ -41,7 +42,31 @@ export default function Dashboard() {
       alert('Payment failed: ' + (error.response?.data?.message || 'Server error'));
     }
   };
+const handleCompleteCharging = async (bookingID) => {
+  try {
+    const response = await API.post(
+      `/bookings/complete/${bookingID}`
+    );
 
+    alert(
+      response.data.message ||
+      'Charging completed successfully'
+    );
+
+    fetchIncomingRequests();
+
+  } catch (error) {
+    console.error(
+      'Complete charging error:',
+      error.response?.data || error.message
+    );
+
+    alert(
+      error.response?.data?.message ||
+      'Failed to complete charging'
+    );
+  }
+};
   return (
     <div style={{ maxWidth: '850px', margin: '30px auto', fontFamily: 'sans-serif', textAlign: 'left', padding: '0 20px' }}>
       <h2 style={{ fontSize: '1.8rem', color: '#0f172a', margin: '0 0 10px 0' }}>
@@ -84,6 +109,28 @@ export default function Dashboard() {
                     <p style={{ margin: 0 }}>
                       <strong>Verification PIN: </strong><span style={{ color: '#16a34a', fontWeight: 'bold' }}>{booking.verificationPIN}</span>
                     </p>
+                    {(
+                      booking.bookingStatus === 'Confirmed' ||
+                      booking.bookingStatus === 'In Progress'
+                    ) && (
+                      <button
+                        onClick={() =>
+                          handleCompleteCharging(booking._id)
+                        }
+                        style={{
+                          marginTop: '15px',
+                          padding: '10px 18px',
+                          background: '#16a34a',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontWeight: '600'
+                        }}
+                      >
+                        Complete Charging
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -119,14 +166,103 @@ export default function Dashboard() {
                     </p>
                   </div>
 
-                  <div style={{ paddingTop: '12px', borderTop: '1px dashed #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ color: '#475569' }}><strong>Payment:</strong> {booking.paymentID?.paymentStatus || 'Pending'}</span>
-                    {booking.paymentID?.paymentStatus === 'Pending' && (
-                      <button onClick={() => handlePayment(booking.paymentID._id)} style={{ padding: '8px 16px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: '600' }}>
-                        Pay Now
-                      </button>
-                    )}
-                  </div>
+                  <div
+  style={{
+    paddingTop: '12px',
+    borderTop: '1px dashed #e2e8f0',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '10px',
+    flexWrap: 'wrap'
+  }}
+>
+  <div>
+    <span style={{ color: '#475569' }}>
+      <strong>Payment:</strong>{' '}
+      {booking.paymentID?.paymentStatus || 'Pending'}
+    </span>
+
+    <br />
+
+    <span style={{ color: '#475569' }}>
+      <strong>Status:</strong>{' '}
+      {booking.bookingStatus || 'Pending'}
+    </span>
+  </div>
+
+  <div
+    style={{
+      display: 'flex',
+      gap: '10px',
+      flexWrap: 'wrap'
+    }}
+  >
+    {booking.paymentID?.paymentStatus === 'Pending' && (
+      <button
+        onClick={() =>
+          handlePayment(booking.paymentID._id)
+        }
+        style={{
+          padding: '8px 16px',
+          background: '#2563eb',
+          color: 'white',
+          border: 'none',
+          borderRadius: '5px',
+          cursor: 'pointer',
+          fontWeight: '600'
+        }}
+      >
+        Pay Now
+      </button>
+    )}
+
+   {booking.bookingStatus === 'Completed' && (
+  <>
+    <button
+      onClick={() =>
+        navigate(`/bill/${booking._id}`)
+      }
+      style={{
+        padding: '8px 16px',
+        background: '#2563eb',
+        color: 'white',
+        border: 'none',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        fontWeight: '600'
+      }}
+    >
+      View Bill
+    </button>
+
+      <button
+        onClick={() =>
+          navigate(
+            `/feedback/${booking.stationID?._id}`,
+            {
+              state: {
+                booking: booking
+              }
+            }
+          )
+        }
+        style={{
+          padding: '8px 16px',
+          background: '#f59e0b',
+          color: 'white',
+          border: 'none',
+          borderRadius: '5px',
+          cursor: 'pointer',
+          fontWeight: '600'
+        }}
+      >
+        ⭐ Give Feedback
+      </button>
+    </>
+  )}
+  </div>
+</div>
                 </div>
               ))}
             </div>
