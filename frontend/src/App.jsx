@@ -11,6 +11,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Feedback from './pages/Feedback';
 import Bill from './pages/Bill';
 import OwnerEarnings from './pages/OwnerEarnings';
+import AdminDashboard from './pages/AdminDashboard';
 function App() {
   return (
     <BrowserRouter>
@@ -39,6 +40,10 @@ function App() {
             <Route
               path="/owner-earnings"
               element={<OwnerEarnings />}
+            />
+            <Route
+              path="/admin-dashboard"
+              element={<AdminDashboard />}
             />
           </Route>
         </Routes>

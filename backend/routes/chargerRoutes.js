@@ -1,5 +1,7 @@
 const express = require('express');
+
 const router = express.Router();
+
 const {
   createCharger,
   getChargersByStation,
@@ -7,15 +9,50 @@ const {
   updateCharger,
   deleteCharger
 } = require('../controllers/chargerController');
-const { protect, authorize } = require('../middleware/authMiddleware');
 
-// Public routes (anyone can see chargers at a station)
-router.get('/station/:stationId', getChargersByStation);
-router.get('/:id', getChargerById);
+const {
+  protect,
+  authorize
+} = require('../middleware/authMiddleware');
 
-// Protected routes (require Station Owner / Admin login)
-router.post('/', protect, createCharger);
-router.put('/:id', protect, updateCharger);
-router.delete('/:id', protect, deleteCharger);
+// Owner/Admin can view chargers of their station
+router.get(
+  '/station/:stationId',
+  protect,
+  authorize('StationOwner', 'Admin'),
+  getChargersByStation
+);
+
+// Owner/Admin can view one charger
+router.get(
+  '/:id',
+  protect,
+  authorize('StationOwner', 'Admin'),
+  getChargerById
+);
+
+// Owner/Admin can add charger
+router.post(
+  '/',
+  protect,
+  authorize('StationOwner', 'Admin'),
+  createCharger
+);
+
+// Owner/Admin can update charger
+router.put(
+  '/:id',
+  protect,
+  authorize('StationOwner', 'Admin'),
+  updateCharger
+);
+
+// Owner/Admin can delete charger
+router.delete(
+  '/:id',
+  protect,
+  authorize('StationOwner', 'Admin'),
+  deleteCharger
+);
 
 module.exports = router;

@@ -37,6 +37,24 @@ export default function OwnerDashboard() {
   const [closingTime, setClosingTime] = useState('21:00');
   const navigate = useNavigate();
   const [chargingDuration, setChargingDuration] = useState('');
+  
+  // Station edit state
+const [editingStation, setEditingStation] = useState(null);
+const [editStationName, setEditStationName] = useState('');
+const [editAddress, setEditAddress] = useState('');
+const [editLatitude, setEditLatitude] = useState('');
+const [editLongitude, setEditLongitude] = useState('');
+const [editOpeningTime, setEditOpeningTime] = useState('09:00');
+const [editClosingTime, setEditClosingTime] = useState('21:00');
+
+// Charger edit state
+const [editingCharger, setEditingCharger] = useState(null);
+const [editVehicleType, setEditVehicleType] = useState('');
+const [editChargingSpeed, setEditChargingSpeed] = useState('');
+const [editPricePerKwh, setEditPricePerKwh] = useState('');
+const [editQuantity, setEditQuantity] = useState('');
+const [editChargingDuration, setEditChargingDuration] = useState('');
+const [editStatus, setEditStatus] = useState('Available');
   // Load Google Maps
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY
@@ -237,7 +255,229 @@ export default function OwnerDashboard() {
       </div>
     );
   }
+  const handleEditStation = (station) => {
+  setEditingStation(station);
 
+  setEditStationName(station.stationName || '');
+  setEditAddress(station.address || '');
+  setEditLatitude(station.latitude || '');
+  setEditLongitude(station.longitude || '');
+  setEditOpeningTime(station.openingTime || '09:00');
+  setEditClosingTime(station.closingTime || '21:00');
+};
+
+const handleUpdateStation = async () => {
+  if (!editStationName.trim()) {
+    alert('Please enter station name.');
+    return;
+  }
+
+  if (!editAddress.trim()) {
+    alert('Please enter station address.');
+    return;
+  }
+
+  try {
+    await API.put(
+      `/stations/${editingStation._id}`,
+      {
+        stationName: editStationName.trim(),
+        address: editAddress.trim(),
+        latitude: Number(editLatitude),
+        longitude: Number(editLongitude),
+        openingTime: editOpeningTime,
+        closingTime: editClosingTime
+      }
+    );
+
+    alert('Station updated successfully.');
+
+    setEditingStation(null);
+
+    fetchStations();
+
+  } catch (error) {
+    console.error('Update station error:', error);
+
+    alert(
+      error.response?.data?.message ||
+      'Failed to update station.'
+    );
+  }
+};
+
+const handleDeleteStation = async (stationID) => {
+  const confirmed = window.confirm(
+    'Are you sure you want to delete this station? All chargers belonging to this station will also be deleted.'
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await API.delete(
+      `/stations/${stationID}`
+    );
+
+    alert('Station deleted successfully.');
+
+    if (selectedStation === stationID) {
+      setSelectedStation('');
+    }
+
+    fetchStations();
+
+  } catch (error) {
+    console.error('Delete station error:', error);
+
+    alert(
+      error.response?.data?.message ||
+      'Failed to delete station.'
+    );
+  }
+};
+const handleEditCharger = (charger) => {
+  setEditingCharger(charger);
+
+  setEditVehicleType(charger.vehicleType || '');
+  setEditChargingSpeed(charger.chargingSpeed || '');
+  setEditPricePerKwh(charger.pricePerKwh || '');
+  setEditQuantity(charger.quantity || '');
+  setEditChargingDuration(charger.chargingDuration || '');
+  setEditStatus(charger.status || 'Available');
+};
+
+const handleUpdateCharger = async () => {
+  if (
+    !editVehicleType ||
+    !editChargingSpeed ||
+    !editPricePerKwh ||
+    !editQuantity ||
+    !editChargingDuration
+  ) {
+    alert('Please fill all charger fields.');
+    return;
+  }
+
+  if (Number(editPricePerKwh) <= 0) {
+    alert('Price per kWh must be greater than 0.');
+    return;
+  }
+
+  if (Number(editQuantity) <= 0) {
+    alert('Quantity must be greater than 0.');
+    return;
+  }
+
+  if (Number(editChargingDuration) <= 0) {
+    alert('Charging duration must be greater than 0.');
+    return;
+  }
+
+  try {
+    await API.put(
+      `/chargers/${editingCharger._id}`,
+      {
+        vehicleType: editVehicleType,
+        chargingSpeed: editChargingSpeed,
+        pricePerKwh: Number(editPricePerKwh),
+        quantity: Number(editQuantity),
+        chargingDuration: Number(editChargingDuration),
+        status: editStatus
+      }
+    );
+
+    alert('Charger updated successfully.');
+
+    setEditingCharger(null);
+
+    fetchStations();
+
+  } catch (error) {
+    console.error('Update charger error:', error);
+
+    alert(
+      error.response?.data?.message ||
+      'Failed to update charger.'
+    );
+  }
+};
+
+const handleDeleteCharger = async (chargerID) => {
+  const confirmed = window.confirm(
+    'Are you sure you want to delete this charger?'
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await API.delete(
+      `/chargers/${chargerID}`
+    );
+
+    alert('Charger deleted successfully.');
+
+    fetchStations();
+
+  } catch (error) {
+    console.error('Delete charger error:', error);
+
+    alert(
+      error.response?.data?.message ||
+      'Failed to delete charger.'
+    );
+  }
+};
+const modalInputStyle = {
+  width: '100%',
+  padding: '10px',
+  marginBottom: '15px',
+  borderRadius: '5px',
+  border: '1px solid #cbd5e1',
+  boxSizing: 'border-box'
+};
+const handleEditMapClick = (event) => {
+  const latitude = event.latLng.lat();
+  const longitude = event.latLng.lng();
+
+  setEditLatitude(latitude);
+  setEditLongitude(longitude);
+};
+const handleEditLiveLocation = () => {
+  if (!navigator.geolocation) {
+    alert('Geolocation is not supported by this browser.');
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+
+      setEditLatitude(latitude);
+      setEditLongitude(longitude);
+    },
+    (error) => {
+      if (error.code === 1) {
+        alert('Location permission was denied.');
+      } else if (error.code === 2) {
+        alert('Unable to determine your location.');
+      } else if (error.code === 3) {
+        alert('Location request timed out.');
+      } else {
+        alert('Unable to get your current location.');
+      }
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    }
+  );
+};
   return (
     
     <div
@@ -374,6 +614,41 @@ export default function OwnerDashboard() {
                     <strong>Longitude:</strong>{' '}
                     {station.longitude}
                   </p>
+                  <div
+                      style={{
+                        display: 'flex',
+                        gap: '10px',
+                        marginTop: '15px'
+                      }}
+                    >
+                      <button
+                        onClick={() => handleEditStation(station)}
+                        style={{
+                          padding: '8px 14px',
+                          background: '#2563eb',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '5px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        ✏️ Edit Station
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteStation(station._id)}
+                        style={{
+                          padding: '8px 14px',
+                          background: '#dc2626',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '5px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        🗑️ Delete Station
+                      </button>
+                    </div>
                 </div>
 
                 <div
@@ -453,6 +728,43 @@ export default function OwnerDashboard() {
                           >
                             Quantity: {charger.quantity || 1}
                           </p>
+                          <div
+                              style={{
+                                display: 'flex',
+                                gap: '8px',
+                                marginTop: '12px'
+                              }}
+                            >
+                              <button
+                                onClick={() => handleEditCharger(charger)}
+                                style={{
+                                  flex: 1,
+                                  padding: '8px',
+                                  background: '#2563eb',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '5px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                ✏️ Edit
+                              </button>
+
+                              <button
+                                onClick={() => handleDeleteCharger(charger._id)}
+                                style={{
+                                  flex: 1,
+                                  padding: '8px',
+                                  background: '#dc2626',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '5px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                🗑️ Delete
+                              </button>
+                            </div>
                         </div>
                       ))
                     ) : (
@@ -953,6 +1265,356 @@ export default function OwnerDashboard() {
           </div>
         </div>
       </div>
+      {editingStation && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}
+        >
+          <div
+            style={{
+              background: 'white',
+              width: '90%',
+              maxWidth: '500px',
+              padding: '25px',
+              borderRadius: '10px',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}
+          >
+            <h2>Edit Station</h2>
+
+            <input
+              type="text"
+              placeholder="Station Name"
+              value={editStationName}
+              onChange={(e) =>
+                setEditStationName(e.target.value)
+              }
+              style={modalInputStyle}
+            />
+
+            <input
+              type="text"
+              placeholder="Address"
+              value={editAddress}
+              onChange={(e) =>
+                setEditAddress(e.target.value)
+              }
+              style={modalInputStyle}
+            />
+
+            <h4
+              style={{
+                marginBottom: '10px',
+                color: '#334155'
+              }}
+            >
+              Select Station Location
+            </h4>
+            <button
+              onClick={handleEditLiveLocation}
+              style={{
+                width: '100%',
+                padding: '12px',
+                marginBottom: '15px',
+                background: '#16a34a',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              📍 Use My Live Location
+            </button>
+            {isLoaded ? (
+              <GoogleMap
+                mapContainerStyle={{
+                  width: '100%',
+                  height: '300px'
+                }}
+                center={{
+                  lat: Number(editLatitude) || defaultCenter.lat,
+                  lng: Number(editLongitude) || defaultCenter.lng
+                }}
+                zoom={14}
+                onClick={handleEditMapClick}
+              >
+                {editLatitude && editLongitude && (
+                  <Marker
+                    position={{
+                      lat: Number(editLatitude),
+                      lng: Number(editLongitude)
+                    }}
+                  />
+                )}
+              </GoogleMap>
+            ) : (
+              <div
+                style={{
+                  height: '300px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: '#f1f5f9',
+                  borderRadius: '8px',
+                  color: '#64748b'
+                }}
+              >
+                Loading Google Maps...
+              </div>
+            )}
+
+            <div
+              style={{
+                marginTop: '10px',
+                padding: '12px',
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                borderRadius: '6px'
+              }}
+            >
+              <p style={{ margin: '4px 0' }}>
+                <strong>Latitude:</strong>{' '}
+                {editLatitude || 'Not selected'}
+              </p>
+
+              <p style={{ margin: '4px 0' }}>
+                <strong>Longitude:</strong>{' '}
+                {editLongitude || 'Not selected'}
+              </p>
+            </div>
+            <label>Opening Time</label>
+
+            <input
+              type="time"
+              value={editOpeningTime}
+              onChange={(e) =>
+                setEditOpeningTime(e.target.value)
+              }
+              style={modalInputStyle}
+            />
+
+            <label>Closing Time</label>
+
+            <input
+              type="time"
+              value={editClosingTime}
+              onChange={(e) =>
+                setEditClosingTime(e.target.value)
+              }
+              style={modalInputStyle}
+            />
+
+            <div
+              style={{
+                display: 'flex',
+                gap: '10px',
+                marginTop: '15px'
+              }}
+            >
+              <button
+                onClick={handleUpdateStation}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  background: '#16a34a',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer'
+                }}
+              >
+                Update Station
+              </button>
+
+              <button
+                onClick={() => setEditingStation(null)}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  background: '#64748b',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+          {editingCharger && (
+            <div
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000
+              }}
+            >
+              <div
+                style={{
+                  background: 'white',
+                  width: '90%',
+                  maxWidth: '500px',
+                  padding: '25px',
+                  borderRadius: '10px',
+                  maxHeight: '90vh',
+                  overflowY: 'auto'
+                }}
+              >
+                <h2>Edit Charger</h2>
+
+                <label>Vehicle Type</label>
+
+                <select
+                  value={editVehicleType}
+                  onChange={(e) =>
+                    setEditVehicleType(e.target.value)
+                  }
+                  style={modalInputStyle}
+                >
+                  <option value="Two-Wheeler">
+                    Two-Wheeler
+                  </option>
+
+                  <option value="Three-Wheeler">
+                    Three-Wheeler
+                  </option>
+
+                  <option value="Four-Wheeler">
+                    Four-Wheeler
+                  </option>
+                </select>
+
+                <input
+                  type="text"
+                  placeholder="Charging Speed"
+                  value={editChargingSpeed}
+                  onChange={(e) =>
+                    setEditChargingSpeed(e.target.value)
+                  }
+                  style={modalInputStyle}
+                />
+
+                <input
+                  type="number"
+                  placeholder="Price per kWh"
+                  value={editPricePerKwh}
+                  onChange={(e) =>
+                    setEditPricePerKwh(e.target.value)
+                  }
+                  style={modalInputStyle}
+                />
+
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="Quantity"
+                  value={editQuantity}
+                  onChange={(e) =>
+                    setEditQuantity(e.target.value)
+                  }
+                  style={modalInputStyle}
+                />
+
+                <label>Charging Duration</label>
+
+                <select
+                  value={editChargingDuration}
+                  onChange={(e) =>
+                    setEditChargingDuration(e.target.value)
+                  }
+                  style={modalInputStyle}
+                >
+                  <option value="30">30 Minutes</option>
+                  <option value="60">1 Hour</option>
+                  <option value="90">1 Hour 30 Minutes</option>
+                  <option value="120">2 Hours</option>
+                  <option value="180">3 Hours</option>
+                </select>
+
+                <label>Status</label>
+
+                <select
+                  value={editStatus}
+                  onChange={(e) =>
+                    setEditStatus(e.target.value)
+                  }
+                  style={modalInputStyle}
+                >
+                  <option value="Available">
+                    Available
+                  </option>
+
+                  <option value="Unavailable">
+                    Unavailable
+                  </option>
+
+                  <option value="Maintenance">
+                    Maintenance
+                  </option>
+                </select>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '10px',
+                    marginTop: '15px'
+                  }}
+                >
+                  <button
+                    onClick={handleUpdateCharger}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      background: '#16a34a',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Update Charger
+                  </button>
+
+                  <button
+                    onClick={() => setEditingCharger(null)}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      background: '#64748b',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

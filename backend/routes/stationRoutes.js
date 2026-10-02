@@ -17,24 +17,8 @@ const {
   authorize
 } = require('../middleware/authMiddleware');
 
+router.get('/', getAllStations);
 
-// ============================================================
-// PUBLIC STATION ROUTES
-// ============================================================
-
-// Get all stations
-// Used by EV users for station discovery
-router.get(
-  '/',
-  getAllStations
-);
-
-
-// ============================================================
-// OWNER STATION ROUTE
-// ============================================================
-
-// Get only stations belonging to logged-in owner
 router.get(
   '/my-stations',
   protect,
@@ -42,20 +26,10 @@ router.get(
   getMyStations
 );
 
-
-// ============================================================
-// SINGLE STATION
-// ============================================================
-
 router.get(
   '/:id',
   getStationById
 );
-
-
-// ============================================================
-// CREATE STATION
-// ============================================================
 
 router.post(
   '/',
@@ -64,37 +38,23 @@ router.post(
   createStation
 );
 
-
-// ============================================================
-// UPDATE STATION
-// ============================================================
-
 router.put(
   '/:id',
   protect,
+  authorize('StationOwner', 'Admin'),
   updateStation
 );
-
-
-// ============================================================
-// DELETE STATION
-// ============================================================
 
 router.delete(
   '/:id',
   protect,
+  authorize('StationOwner', 'Admin'),
   deleteStation
 );
-
-
-// ============================================================
-// ROAD DISTANCES
-// ============================================================
 
 router.post(
   '/road-distances',
   getRoadDistances
 );
-
 
 module.exports = router;

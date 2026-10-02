@@ -23,37 +23,36 @@ export default function Login() {
 
     const user = response.data.user;
 
-    const role = user?.role;
+    const role =
+  response.data.user?.role ||
+  response.data.role;
 
-    // Store authentication information
-    localStorage.setItem(
-      'token',
-      token
-    );
+localStorage.setItem(
+  'token',
+  response.data.token
+);
 
-    localStorage.setItem(
-      'role',
-      role
-    );
+localStorage.setItem(
+  'role',
+  role
+);
 
-    localStorage.setItem(
-      'user',
-      JSON.stringify(user)
-    );
 
-    // Redirect according to role
-    if (role === 'StationOwner') {
-      window.location.href =
-        '/owner-dashboard';
+if (role === 'Admin') {
 
-    } else if (role === 'Admin') {
-      window.location.href =
-        '/admin-dashboard';
+  window.location.href =
+    '/admin-dashboard';
 
-    } else {
-      window.location.href =
-        '/dashboard';
-    }
+} else if (role === 'StationOwner') {
+
+  window.location.href =
+    '/owner-dashboard';
+
+} else {
+
+  window.location.href =
+    '/stations';
+}
 
   } catch (error) {
     alert(
