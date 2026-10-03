@@ -12,6 +12,9 @@ import Feedback from './pages/Feedback';
 import Bill from './pages/Bill';
 import OwnerEarnings from './pages/OwnerEarnings';
 import AdminDashboard from './pages/AdminDashboard';
+import About from './pages/About';
+import Help from './pages/Help';
+
 function App() {
   return (
     <BrowserRouter>
@@ -23,28 +26,18 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/stations" element={<Stations />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/help" element={<Help />} />
           
           {/* Protected Routes (Requires Authentication to Book or View Dashboards) */}
           <Route element={<ProtectedRoute />}>
             <Route path="/stations/:id" element={<Booking />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/owner-dashboard" element={<OwnerDashboard />} />
-            <Route
-            path="/feedback/:stationId"
-            element={<Feedback />}
-            />
-            <Route
-              path="/bill/:bookingID"
-              element={<Bill />}
-            />
-            <Route
-              path="/owner-earnings"
-              element={<OwnerEarnings />}
-            />
-            <Route
-              path="/admin-dashboard"
-              element={<AdminDashboard />}
-            />
+            <Route path="/feedback/:stationId" element={<Feedback />} />
+            <Route path="/bill/:bookingID" element={<Bill />} />
+            <Route path="/owner-earnings" element={<OwnerEarnings />} />
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
           </Route>
         </Routes>
       </div>
