@@ -1,5 +1,4 @@
 const express = require('express');
-
 const router = express.Router();
 
 const {
@@ -15,23 +14,20 @@ const {
   authorize
 } = require('../middleware/authMiddleware');
 
-// Owner/Admin can view chargers of their station
+// PUBLIC/EV DRIVER ROUTES: Anyone logged in can view chargers
 router.get(
   '/station/:stationId',
   protect,
-  authorize('StationOwner', 'Admin'),
   getChargersByStation
 );
 
-// Owner/Admin can view one charger
 router.get(
   '/:id',
   protect,
-  authorize('StationOwner', 'Admin'),
   getChargerById
 );
 
-// Owner/Admin can add charger
+// OWNER/ADMIN ROUTES: Only authorized roles can modify chargers
 router.post(
   '/',
   protect,
@@ -39,7 +35,6 @@ router.post(
   createCharger
 );
 
-// Owner/Admin can update charger
 router.put(
   '/:id',
   protect,
@@ -47,7 +42,6 @@ router.put(
   updateCharger
 );
 
-// Owner/Admin can delete charger
 router.delete(
   '/:id',
   protect,

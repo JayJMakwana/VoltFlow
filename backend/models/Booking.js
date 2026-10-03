@@ -6,34 +6,32 @@ const bookingSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-
   stationID: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'ChargingStation',
     required: true
   },
-
   chargerID: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Charger',
     required: true
   },
-
+  chargerUnit: {
+    type: Number,
+    required: true
+  },
   bookingDate: {
     type: String,
     required: true
   },
-
   startTime: {
     type: String,
     required: true
   },
-
   endTime: {
     type: String,
     required: true
   },
-
   bookingStatus: {
     type: String,
     enum: [
@@ -45,21 +43,17 @@ const bookingSchema = new mongoose.Schema({
     ],
     default: 'Pending'
   },
-
   verificationPIN: {
     type: String,
     required: true
   },
-
   paymentID: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Payment'
   },
-
   completedAt: {
     type: Date
   }
-
 }, {
   timestamps: true
 });

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../api/axios';
+import { Link } from 'react-router-dom';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -24,19 +25,33 @@ export default function Register() {
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '40px auto', fontFamily: 'sans-serif' }}>
-      <h2 style={{ marginBottom: '20px' }}>Create an Account</h2>
-      <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <input type="text" name="name" placeholder="Full Name" onChange={handleChange} style={{ padding: '10px' }} required />
-        <input type="email" name="email" placeholder="Email" onChange={handleChange} style={{ padding: '10px' }} required />
-        <input type="password" name="password" placeholder="Password" onChange={handleChange} style={{ padding: '10px' }} required />
-        <input type="text" name="phone" placeholder="Phone Number" onChange={handleChange} style={{ padding: '10px' }} required />
-        <select name="role" onChange={handleChange} style={{ padding: '10px' }}>
-          <option value="EVUser">EV Driver</option>
-          <option value="StationOwner">Station Owner</option>
-        </select>
-        <button type="submit" style={{ padding: '12px', background: '#4ade80', fontWeight: 'bold', cursor: 'pointer', border: 'none' }}>Register</button>
-      </form>
+  <div style={{ maxWidth: '400px', margin: '40px auto', fontFamily: 'sans-serif' }}>
+    <h2 style={{ marginBottom: '20px' }}>Create an Account</h2>
+    
+    <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+      <input type="text" name="name" placeholder="Full Name" onChange={handleChange} style={{ padding: '10px' }} required />
+      <input type="email" name="email" placeholder="Email" onChange={handleChange} style={{ padding: '10px' }} required />
+      <input type="password" name="password" placeholder="Password" onChange={handleChange} style={{ padding: '10px' }} required />
+      <input type="text" name="phone" placeholder="Phone Number" onChange={handleChange} style={{ padding: '10px' }} required />
+      <select name="role" onChange={handleChange} style={{ padding: '10px' }}>
+        <option value="EVUser">EV Driver</option>
+        <option value="StationOwner">Station Owner</option>
+      </select>
+      <button type="submit" style={{ padding: '12px', background: '#4ade80', fontWeight: 'bold', cursor: 'pointer', border: 'none' }}>Register</button>
+    </form>
+    
+    {/* Placed outside the form */}
+    <div style={{ marginTop: '20px', textAlign: 'center' }}>
+      <p style={{ color: '#64748b', fontSize: '0.95rem', margin: 0 }}>
+        Already have an account?{' '}
+        <Link 
+          to="/login" 
+          style={{ color: '#2563eb', textDecoration: 'none', fontWeight: 'bold' }}
+        >
+          Log in here
+        </Link>
+      </p>
     </div>
-  );
+  </div>
+);
 }

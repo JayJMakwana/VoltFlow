@@ -1,5 +1,4 @@
 const express = require('express');
-
 const router = express.Router();
 
 const {
@@ -7,59 +6,17 @@ const {
   getUserBookings,
   getOwnerBookings,
   getAvailableSlots,
-  completeCharging
+  completeCharging,
+  cancelBooking
 } = require('../controllers/bookingController');
 
 const { protect } = require('../middleware/authMiddleware');
 
-// ============================================================
-// CREATE BOOKING
-// ============================================================
-
-router.post(
-  '/',
-  protect,
-  createBooking
-);
-
-// ============================================================
-// USER BOOKINGS
-// ============================================================
-
-router.get(
-  '/my-bookings',
-  protect,
-  getUserBookings
-);
-
-// ============================================================
-// OWNER BOOKINGS
-// ============================================================
-
-router.get(
-  '/owner-bookings',
-  protect,
-  getOwnerBookings
-);
-
-// ============================================================
-// AVAILABLE SLOTS
-// ============================================================
-
-router.get(
-  '/available-slots/:stationID/:chargerID/:date',
-  protect,
-  getAvailableSlots
-);
-
-// ============================================================
-// COMPLETE CHARGING
-// ============================================================
-
-router.post(
-  '/complete/:bookingID',
-  protect,
-  completeCharging
-);
+router.post('/', protect, createBooking);
+router.get('/my-bookings', protect, getUserBookings);
+router.get('/owner-bookings', protect, getOwnerBookings);
+router.get('/available-slots/:stationID/:chargerID/:date', protect, getAvailableSlots);
+router.post('/complete/:bookingID', protect, completeCharging);
+router.put('/cancel/:bookingID', protect, cancelBooking);
 
 module.exports = router;
