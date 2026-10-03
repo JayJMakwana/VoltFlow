@@ -62,7 +62,7 @@ export default function Navbar() {
       {/* Dashboard placed early in the navbar */}
       {token && (
         <>
-          {role !== 'Admin' && role !== 'StationOwner' && (
+          {role !== 'Admin' && (
             <Link to="/dashboard" style={getLinkStyle('/dashboard')}>
               My Dashboard
             </Link>
